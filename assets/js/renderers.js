@@ -117,7 +117,7 @@ window.SparksRenderers = ((utils) => {
         <div class="section-title">
           <span class="eyebrow">第一版功能地图</span>
           <h2>先把闭环摆出来，再逐层加深</h2>
-          <p>v3 开始把入口页升级成真正的独立产品页，而不只是单点功能占位。</p>
+          <p>v3.5 开始把入口页升级成真正的独立产品页，而不只是单点功能占位。</p>
         </div>
         <div class="feature-grid">
           ${secondaryNav.map((item) => `
