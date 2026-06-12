@@ -3,6 +3,14 @@
 window.SparksParticles = (() => {
   function init(canvas) {
     if (!canvas) return;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isCompactViewport = window.innerWidth <= 680;
+
+    if (prefersReducedMotion) {
+      initFallback(canvas, { reducedMotion: true });
+      return;
+    }
+
     const gl = canvas.getContext("webgl", { alpha: true, antialias: true });
     if (!gl) {
       initFallback(canvas);
@@ -33,7 +41,7 @@ window.SparksParticles = (() => {
       void main() {
         vec2 uv = vTexCoord;
         vec3 color = vec3(0.0);
-        vec2 grid = uv * vec2(24.0, 18.0);
+        vec2 grid = uv * vec2(20.0, 15.0);
         vec2 id = floor(grid);
         vec2 f = fract(grid);
         vec2 mouse = uMouse / max(uResolution, vec2(1.0));
@@ -47,7 +55,7 @@ window.SparksParticles = (() => {
             float pull = exp(-length(uv - mouse) * 5.0);
             pos += (uv - mouse) * pull * 0.5;
             float d = length(f - pos);
-            float size = 0.012 + 0.022 * h;
+            float size = 0.01 + 0.018 * h;
             float particle = smoothstep(size, 0.0, d);
             particle *= 0.35 + 0.65 * sin(uTime * 1.5 + h * 10.0);
             color += particle * vec3(0.8, 0.9, 1.0);
@@ -107,14 +115,15 @@ window.SparksParticles = (() => {
 
     function resize() {
       const scale = Math.min(window.devicePixelRatio || 1, 2);
-      const width = Math.floor(window.innerWidth * scale);
-      const height = Math.floor(window.innerHeight * scale);
+      const densityScale = isCompactViewport ? Math.min(scale, 1.25) : scale;
+      const width = Math.floor(window.innerWidth * densityScale);
+      const height = Math.floor(window.innerHeight * densityScale);
       if (canvas.width !== width || canvas.height !== height) {
         canvas.width = width;
         canvas.height = height;
         gl.viewport(0, 0, width, height);
       }
-      return scale;
+      return densityScale;
     }
 
     function frame(time) {
@@ -129,23 +138,26 @@ window.SparksParticles = (() => {
     requestAnimationFrame(frame);
   }
 
-  function initFallback(canvas) {
+  function initFallback(canvas, options = {}) {
     const ctx = canvas.getContext("2d");
     const particles = [];
+    const reducedMotion = Boolean(options.reducedMotion);
 
     function resize() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       particles.length = 0;
-      const count = Math.min(160, Math.floor((canvas.width * canvas.height) / 12000));
+      const maxCount = reducedMotion ? 32 : 90;
+      const density = reducedMotion ? 32000 : 18000;
+      const count = Math.min(maxCount, Math.floor((canvas.width * canvas.height) / density));
       for (let index = 0; index < count; index += 1) {
         particles.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          vx: Math.random() * 0.5 - 0.25,
-          vy: Math.random() * 0.5 - 0.25,
+          vx: reducedMotion ? 0 : Math.random() * 0.5 - 0.25,
+          vy: reducedMotion ? 0 : Math.random() * 0.5 - 0.25,
           r: Math.random() * 1.5 + 0.45,
-          alpha: Math.random() * 0.42 + 0.12
+          alpha: Math.random() * (reducedMotion ? 0.2 : 0.42) + 0.12
         });
       }
     }

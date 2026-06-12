@@ -128,6 +128,17 @@
     state.pendingPurchaseCount = countPendingPurchases();
   }
 
+  function recomputeProjectDerivedState() {
+    recomputeAllProjectStats();
+    recomputeCollectionCount();
+    recomputePendingPurchaseCount();
+  }
+
+  function recomputeDownloadDerivedState() {
+    recomputeDownloadSummary();
+    recomputePendingPurchaseCount();
+  }
+
   function syncRouteState() {
     state.route = router.routeFromHash();
     const params = router.paramsFromHash();
@@ -145,10 +156,8 @@
     }
   }
 
-  recomputeAllProjectStats();
-  recomputeCollectionCount();
+  recomputeProjectDerivedState();
   recomputeDownloadSummary();
-  recomputePendingPurchaseCount();
 
   const app = document.getElementById("app");
   const header = document.querySelector(".site-header");
@@ -156,13 +165,24 @@
   const menuButton = document.querySelector("[data-menu-button]");
   const searchInput = document.getElementById("site-search");
 
+  function setMenuOpen(open) {
+    state.menuOpen = Boolean(open);
+    document.body.dataset.menuOpen = String(state.menuOpen);
+  }
+
+  function closeMenu() {
+    if (!state.menuOpen) return;
+    setMenuOpen(false);
+    updateChrome();
+  }
+
   function renderNav() {
     nav.innerHTML = content.nav.map((item) => `<a href="#${escapeHtml(item.route)}" data-route="${escapeHtml(item.route)}">${escapeHtml(item.label)}</a>`).join("");
   }
 
   function render(focusMain = false) {
     syncRouteState();
-    state.menuOpen = false;
+    setMenuOpen(false);
     app.innerHTML = router.renderRoute(state.route, state);
     document.title = `S-parks | ${router.navLabel(state.route)}`;
     updateChrome();
@@ -183,6 +203,8 @@
     });
     nav.classList.toggle("open", state.menuOpen);
     menuButton.setAttribute("aria-expanded", String(state.menuOpen));
+    menuButton.setAttribute("aria-label", state.menuOpen ? "关闭导航" : "打开导航");
+    nav.setAttribute("aria-hidden", String(!state.menuOpen && window.innerWidth <= 920));
     header.dataset.elevated = String(window.scrollY > 8);
   }
 
@@ -317,10 +339,8 @@
             if (entry.assetId === assetId) entry.state = "已购";
           });
         });
-        recomputeAllProjectStats();
-        recomputeCollectionCount();
-        recomputeDownloadSummary();
-        recomputePendingPurchaseCount();
+        recomputeProjectDerivedState();
+        recomputeDownloadDerivedState();
       }
       state.licensePurchased = true;
       rerender(alreadyPurchased ? "该素材已存在授权记录" : "已生成模拟授权记录");
@@ -343,14 +363,20 @@
   function bindEvents() {
     window.addEventListener("hashchange", () => render(true));
     window.addEventListener("scroll", updateChrome, { passive: true });
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 920) {
+        setMenuOpen(false);
+      }
+      updateChrome();
+    }, { passive: true });
 
     menuButton.addEventListener("click", () => {
-      state.menuOpen = !state.menuOpen;
+      setMenuOpen(!state.menuOpen);
       updateChrome();
     });
 
     nav.addEventListener("click", (event) => {
-      if (event.target.closest("a[data-route]")) state.menuOpen = false;
+      if (event.target.closest("a[data-route]")) closeMenu();
     });
 
     searchInput.addEventListener("input", (event) => {
@@ -361,6 +387,16 @@
       } else {
         rerender();
       }
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!state.menuOpen || window.innerWidth > 920) return;
+      const insideMenu = event.target.closest("[data-site-nav], [data-menu-button]");
+      if (!insideMenu) closeMenu();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeMenu();
     });
 
     app.addEventListener("click", (event) => {
