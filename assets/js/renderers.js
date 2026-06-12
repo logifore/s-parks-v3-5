@@ -157,7 +157,7 @@ window.SparksRenderers = ((utils) => {
         </div>
         <div class="bento-grid">
           ${home.trending.map((item, index) => `
-            <a class="image-card trend-card trend-${index + 1}" href="#detail" data-action="open-detail" data-asset="${escapeHtml(item.id)}">
+            <a class="image-card trend-card trend-${index + 1}" href="${escapeHtml(hrefFor("detail", item.id))}" data-action="open-detail" data-asset="${escapeHtml(item.id)}">
               ${image(item.image, item.name, "card-image")}
               <div class="card-overlay">
                 <h3>${escapeHtml(item.name)}</h3>
