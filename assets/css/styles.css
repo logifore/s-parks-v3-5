@@ -277,7 +277,6 @@ body[data-menu-open="true"] .site-footer {
   position: relative;
   z-index: 1;
 }
-
 #app {
   min-height: calc(100vh - 160px);
   min-height: calc(100svh - 160px);
